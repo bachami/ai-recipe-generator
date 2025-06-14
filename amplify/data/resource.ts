@@ -1,53 +1,43 @@
-import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
-
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any unauthenticated user can "create", "read", "update", 
-and "delete" any "Todo" records.
-=========================================================================*/
-const schema = a.schema({
-  Todo: a
-    .model({
-      content: a.string(),
-    })
-    .authorization((allow) => [allow.guest()]),
-});
-
-export type Schema = ClientSchema<typeof schema>;
-
-export const data = defineData({
-  schema,
-  authorizationModes: {
-    defaultAuthorizationMode: 'identityPool',
-  },
-});
-
-/*== STEP 2 ===============================================================
-Go to your frontend source code. From your client-side code, generate a
-Data client to make CRUDL requests to your table. (THIS SNIPPET WILL ONLY
-WORK IN THE FRONTEND CODE FILE.)
-
-Using JavaScript or Next.js React Server Components, Middleware, Server 
-Actions or Pages Router? Review how to generate Data clients for those use
-cases: https://docs.amplify.aws/gen2/build-a-backend/data/connect-to-API/
-=========================================================================*/
-
-/*
-"use client"
-import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
-
-const client = generateClient<Schema>() // use this Data client for CRUDL requests
-*/
-
-/*== STEP 3 ===============================================================
-Fetch records from the database and use them in your frontend component.
-(THIS SNIPPET WILL ONLY WORK IN THE FRONTEND CODE FILE.)
-=========================================================================*/
-
-/* For example, in a React component, you can use this snippet in your
-  function's RETURN statement */
-// const { data: todos } = await client.models.Todo.list()
-
-// return <ul>{todos.map(todo => <li key={todo.id}>{todo.content}</li>)}</ul>
+export function request(ctx) {
+    const { ingredients = [] } = ctx.args;
+  
+    // Construct the prompt with the provided ingredients
+    const prompt = `Suggest a recipe idea using these ingredients: ${ingredients.join(", ")}.`;
+  
+    // Return the request configuration
+    return {
+      resourcePath: `/model/anthropic.claude-3-sonnet-20240229-v1:0/invoke`,
+      method: "POST",
+      params: {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          anthropic_version: "bedrock-2023-05-31",
+          max_tokens: 1000,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `\n\nHuman: ${prompt}\n\nAssistant:`,
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    };
+  }
+  
+  export function response(ctx) {
+    // Parse the response body
+    const parsedBody = JSON.parse(ctx.result.body);
+    // Extract the text content from the response
+    const res = {
+      body: parsedBody.content[0].text,
+    };
+    // Return the response
+    return res;
+  }
